@@ -4,14 +4,14 @@ namespace Util\Git\Operation;
 
 class Init
 {
-    private string $gitDirName = 'dotgit';
-
     public function execute(array $args): void
     {
-        if (file_exists($this->gitDirName)) {
-            return;
+        if (!file_exists('dotgit')) {
+            mkdir('dotgit');
         }
 
-        mkdir($this->gitDirName);
+        if (!file_exists('objects')) {
+            mkdir('dotgit/objects');
+        }
     }
 }

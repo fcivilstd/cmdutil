@@ -8,6 +8,7 @@ class GitController
 {
     private array $operation = [
         'init' => \Util\Git\Operation\Init::class,
+        'add' => \Util\Git\Operation\Add::class,
     ];
 
     public function execute(array $args): void
