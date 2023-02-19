@@ -3,6 +3,7 @@
 namespace Util\Git\Operation;
 
 use InvalidArgumentException;
+use Util\Git\Index;
 use Util\Git\Object\Blob;
 
 class Add
@@ -27,6 +28,12 @@ class Add
 
         $fp = fopen('dotgit/objects/'.$blob->head2().'/'.$blob->name(), 'w');
         fwrite($fp, $blob->content());
+        fclose($fp);
+
+        $index = new Index();
+        $index->update($filename, $blob->head2().$blob->name());
+        $fp = fopen('dotgit/index', 'w');
+        fwrite($fp, json_encode($index->content()));
         fclose($fp);
     }
 }

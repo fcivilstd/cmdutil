@@ -9,6 +9,8 @@ class GitController
     private array $operation = [
         'init' => \Util\Git\Operation\Init::class,
         'add' => \Util\Git\Operation\Add::class,
+        'commit' => \Util\Git\Operation\Commit::class,
+        'rm' => \Util\Git\Operation\Remove::class,
     ];
 
     public function execute(array $args): void

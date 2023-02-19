@@ -38,8 +38,6 @@ class Blob
     
     public function content(): string
     {
-        assert($this->content !== '');
-
         return $this->content;
     }
 }

@@ -13,5 +13,11 @@ class Init
         if (!file_exists('objects')) {
             mkdir('dotgit/objects');
         }
+
+        if (!file_exists('dotgit/index')) {
+            $fp = fopen('dotgit/index', 'w');
+            fwrite($fp, json_encode([]));
+            fclose($fp);
+        }
     }
 }
