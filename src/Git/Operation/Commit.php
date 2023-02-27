@@ -27,14 +27,13 @@ class Commit
         $root = new Tree();
         foreach ($index->graph() as $path => $target) {
             $_path = preg_replace('/\A\//u', '', $path);
+            if (count(explode('/', $_path)) !== 1) continue;
             // ファイル
             if ($target === []) {
-                if (count(explode('/', $_path)) !== 1) continue;
                 $root->addBlob(new Blob($_path), $_path);
                 continue;
             }
             // ディレクトリ
-            if (count(explode('/', $_path)) !== 1) continue;
             $root->addTree($this->assembleTree($index, $path), $_path);
         }
 
