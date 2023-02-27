@@ -40,4 +40,17 @@ class Blob
     {
         return $this->content;
     }
+
+    public function save(): void
+    {
+        if (file_exists('dotgit/objects/'.$this->head2().'/'.$this->name())) return;
+
+        if (!file_exists('dotgit/objects/'.$this->head2())) {
+            mkdir('dotgit/objects/'.$this->head2());
+        }
+
+        $fp = fopen('dotgit/objects/'.$this->head2().'/'.$this->name(), 'w');
+        fwrite($fp, $this->content());
+        fclose($fp);  
+    }
 }

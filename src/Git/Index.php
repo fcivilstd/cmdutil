@@ -72,4 +72,11 @@ class Index
             }
         }
     }
+
+    public function save(): void
+    {
+        $fp = fopen('dotgit/index', 'w');
+        fwrite($fp, json_encode($this->content()));
+        fclose($fp);
+    }
 }

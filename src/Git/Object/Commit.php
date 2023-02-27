@@ -6,6 +6,9 @@ use InvalidArgumentException;
 
 class Commit
 {
+    private string $head2 = '';
+    private string $name = '';
+
     private string $tree = '';
     private string $parent = '';
     private string $author = '';
@@ -15,7 +18,6 @@ class Commit
 
     public function __construct(
         string $tree,
-        string $parent,
         string $author,
         string $committer,
         string $message
@@ -26,6 +28,15 @@ class Commit
             throw new InvalidArgumentException('you can\'t commit without message.');
         }
         $this->message = $message;
+
+        assert(file_exists('dotgit/HEAD') !== false);
+        $HEAD = file_get_contents('dotgit/HEAD');
+
+        $parent = '';
+        if (file_exists('dotgit/'.$HEAD)) {
+            $parent = file_get_contents('dotgit/'.$HEAD);
+        }
+
         $this->content = [
             'tree' => $tree,
             'parent' => $parent,
@@ -33,6 +44,16 @@ class Commit
             'committer' => $committer,
             'message' => $message,
         ];
+    }
+
+    public function head2(): string
+    {
+        return $this->head2;
+    }
+
+    public function name(): string
+    {
+        return $this->name;
     }
 
     public function tree(): string
@@ -73,5 +94,28 @@ class Commit
         assert($this->content !== []);
 
         return $this->content;
+    }
+
+    public function save(): void
+    {
+        $content = json_encode($this->content());
+
+        $hash = sha1('commit '.(string)strlen($content).'\0'.$content);
+        $this->head2 = substr($hash, 0, 2);
+        $this->name = substr($hash, 2);
+
+        if (!file_exists('dotgit/objects/'.$this->head2())) {
+            mkdir('dotgit/objects/'.$this->head2());
+        }
+
+        $fp = fopen('dotgit/objects/'.$this->head2().'/'.$this->name(), 'w');
+        fwrite($fp, $content);
+        fclose($fp);
+
+        assert(file_exists('dotgit/HEAD') !== false);
+        $HEAD = file_get_contents('dotgit/HEAD');
+        $fp = fopen('dotgit/'.$HEAD, 'w');
+        fwrite($fp, $this->head2().$this->name());
+        fclose($fp);
     }
 }

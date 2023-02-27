@@ -21,19 +21,10 @@ class Add
         }
 
         $blob = new Blob($filename);
-
-        if (!file_exists('dotgit/objects/'.$blob->head2())) {
-            mkdir('dotgit/objects/'.$blob->head2());
-        }
-
-        $fp = fopen('dotgit/objects/'.$blob->head2().'/'.$blob->name(), 'w');
-        fwrite($fp, $blob->content());
-        fclose($fp);
+        $blob->save();
 
         $index = new Index();
         $index->update($filename, $blob->head2().$blob->name());
-        $fp = fopen('dotgit/index', 'w');
-        fwrite($fp, json_encode($index->content()));
-        fclose($fp);
+        $index->save();
     }
 }
