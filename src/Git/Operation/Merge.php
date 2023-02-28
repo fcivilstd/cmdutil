@@ -20,6 +20,8 @@ class Merge
         $targetCommitId = $this->findTargetCommitId($branch);
         $commonCommitId = $this->findCommonCommitId($baseCommitId, $targetCommitId);
 
+        var_dump($baseCommitId);
+        var_dump($targetCommitId);
         var_dump($commonCommitId);
     }
 
@@ -42,6 +44,22 @@ class Merge
 
     private function findCommonCommitId(string $baseCommitId, string $targetCommitId): string
     {
+        $baseCommits = [];
+
+        $baseCommits[] = $baseCommitId;
+        while ($baseCommitId !== '') {
+            $baseCommitId = Commit::restore($baseCommitId)->parent();
+            if ($baseCommitId !== '') {
+                $baseCommits[] = $baseCommitId;
+            }
+        }
+        $baseCommitId = array_flip($baseCommits);
+
+        do {
+            if (array_key_exists($targetCommitId, $baseCommitId)) return $targetCommitId;
+        }
+        while (($targetCommitId = Commit::restore($targetCommitId)->parent()) !== '');
+
         return '';
     }
 }
