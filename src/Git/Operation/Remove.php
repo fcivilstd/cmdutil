@@ -2,7 +2,6 @@
 
 namespace Util\Git\Operation;
 
-use InvalidArgumentException;
 use Util\Git\Index;
 
 class Remove
@@ -13,8 +12,6 @@ class Remove
 
         $index = new Index();
         $index->remove($filename);
-        $fp = fopen('dotgit/index', 'w');
-        fwrite($fp, json_encode($index->content()));
-        fclose($fp);
+        $index->save();
     }
 }

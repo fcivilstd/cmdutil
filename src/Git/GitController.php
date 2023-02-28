@@ -11,6 +11,8 @@ class GitController
         'add' => \Util\Git\Operation\Add::class,
         'commit' => \Util\Git\Operation\Commit::class,
         'rm' => \Util\Git\Operation\Remove::class,
+        'branch' => \Util\Git\Operation\Branch::class,
+        'checkout' => \Util\Git\Operation\Checkout::class,
     ];
 
     public function execute(array $args): void
