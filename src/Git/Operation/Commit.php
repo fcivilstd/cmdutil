@@ -39,12 +39,11 @@ class Commit
 
         $root->save();
 
-        $commit = new \Util\Git\Object\Commit(
-                            $root->head2().$root->name(),
-                            'me',
-                            'me',
-                            $message
-                        );
+        $commit = \Util\Git\Object\Commit::new(
+                    $root->head2().$root->name(),
+                    'me',
+                    'me',
+                    $message);
         $commit->save();
     }
 

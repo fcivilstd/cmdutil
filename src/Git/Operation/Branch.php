@@ -3,6 +3,7 @@
 namespace Util\Git\Operation;
 
 use InvalidArgumentException;
+use Util\Git\Index;
 
 class Branch
 {
@@ -25,5 +26,9 @@ class Branch
         $fp = fopen('dotgit/refs/heads/'.$branch, 'w');
         fwrite($fp, file_get_contents('dotgit/'.$HEAD));
         fclose($fp);
+
+        $index = new Index();
+        $index->copyTo($branch);
+        $index->save();
     }
 }

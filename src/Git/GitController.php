@@ -13,6 +13,7 @@ class GitController
         'rm' => \Util\Git\Operation\Remove::class,
         'branch' => \Util\Git\Operation\Branch::class,
         'checkout' => \Util\Git\Operation\Checkout::class,
+        'merge' => \Util\Git\Operation\Merge::class,
     ];
 
     public function execute(array $args): void

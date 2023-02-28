@@ -16,27 +16,23 @@ class Commit
     private string $message = '';
     private array $content = [];
 
-    public function __construct(
+    private function __construct(
         string $tree,
+        string $parent,
         string $author,
         string $committer,
         string $message
     )
     {
         $this->tree = $tree;
+        $this->parent = $parent;
+        $this->author = $author;
+        $this->committer = $committer;
         if ($message === '') {
-            throw new InvalidArgumentException('you can\'t commit without message.');
+            echo 'input message.'.PHP_EOL;
+            return;
         }
         $this->message = $message;
-
-        assert(file_exists('dotgit/HEAD') !== false);
-        $HEAD = file_get_contents('dotgit/HEAD');
-
-        $parent = '';
-        if (file_exists('dotgit/'.$HEAD)) {
-            $parent = file_get_contents('dotgit/'.$HEAD);
-        }
-
         $this->content = [
             'tree' => $tree,
             'parent' => $parent,
@@ -46,13 +42,52 @@ class Commit
         ];
     }
 
+    public static function new(
+        string $tree,
+        string $author,
+        string $committer,
+        string $message
+    ): self
+    {
+        assert(file_exists('dotgit/HEAD') !== false);
+        $HEAD = file_get_contents('dotgit/HEAD');
+
+        $parent = '';
+        if (file_exists('dotgit/'.$HEAD)) {
+            $parent = file_get_contents('dotgit/'.$HEAD);
+        }
+
+        return new self($tree, $parent, $author, $committer, $message);
+    }
+
+    public static function restore(string $commitId): self
+    {
+        $head2 = substr($commitId, 0, 2);
+        $name = substr($commitId, 2);
+        if (!file_exists('dotgit/objects/'.$head2.'/'.$name)) {
+            throw new InvalidArgumentException($commitId.' doesn\'t exist');
+        }
+
+        $content = json_decode(file_get_contents('dotgit/objects/'.$head2.'/'.$name), true);
+        return new self(
+            $content['tree'],
+            $content['parent'],
+            $content['author'],
+            $content['committer'],
+            $content['message']);
+    }
+
     public function head2(): string
     {
+        assert($this->head2 !== '');
+
         return $this->head2;
     }
 
     public function name(): string
     {
+        assert($this->name !== '');
+
         return $this->name;
     }
 

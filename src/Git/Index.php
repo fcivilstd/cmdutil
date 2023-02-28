@@ -10,17 +10,23 @@ class Index
     // ディレクトリ構成をもとに構築したグラフ(隣接リスト形式)
     private array $graph = [];
 
+    private string $branch = '';
     private array $content = [];
 
     public function __construct()
     {
-        if (!file_exists('dotgit/index')) {
-            throw new RuntimeException('index doesn\'t exist.');
-        }
+        assert(file_exists('dotgit/index') !== false);
+        assert(file_exists('dotgit/HEAD') !== false);
+        $HEAD = file_get_contents('dotgit/HEAD');
 
+        $this->branch = preg_replace('/\A.*\//u', '', $HEAD);
         $this->content = json_decode(file_get_contents('dotgit/index'), true);
 
-        foreach ($this->content as $filename => $_) {
+        if (!isset($this->content[$this->branch])) {
+            $this->content[$this->branch] = [];
+        }
+
+        foreach ($this->content[$this->branch] as $filename => $_) {
             $this->addPath($filename);
         }
     }
@@ -33,16 +39,23 @@ class Index
             throw new InvalidArgumentException($filename.' is directory name.');
         }
 
-        $this->content[$filename] = $hash;
+        $this->content[$this->branch()][$filename] = $hash;
 
         $this->addPath($filename);
     }
 
     public function remove(string $filename): void
     {
-        if (isset($this->content[$filename])) {
-            unset($this->content[$filename]);
+        if (isset($this->content[$this->branch()][$filename])) {
+            unset($this->content[$this->branch()][$filename]);
         }
+    }
+
+    public function branch(): string
+    {
+        assert($this->branch !== '');
+
+        return $this->branch;
     }
 
     public function content(): array
@@ -71,6 +84,11 @@ class Index
                 $this->graph[$currentPath][] = $explodedFilename[$i + 1];
             }
         }
+    }
+
+    public function copyTo(string $targetBranch): void
+    {
+        $this->content[$targetBranch] = $this->content[$this->branch()];
     }
 
     public function save(): void
