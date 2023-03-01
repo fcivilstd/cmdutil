@@ -1,7 +1,11 @@
 {
     "autoload": {
         "psr-4": {
-            "Util\\": "src"
+            "Util\\": "src",
+            "Test\\": "tests"
         }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0"
     }
 }

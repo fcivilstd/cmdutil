@@ -10,7 +10,7 @@ class Commit
     private string $name = '';
 
     private string $tree = '';
-    private string $parent = '';
+    private array $parent = [];
     private string $author = '';
     private string $committer = '';
     private string $message = '';
@@ -18,7 +18,7 @@ class Commit
 
     private function __construct(
         string $tree,
-        string $parent,
+        array $parent,
         string $author,
         string $committer,
         string $message
@@ -34,11 +34,11 @@ class Commit
         }
         $this->message = $message;
         $this->content = [
-            'tree' => $tree,
-            'parent' => $parent,
-            'author' => $author,
-            'committer' => $committer,
-            'message' => $message,
+            'tree' => $this->tree,
+            'parent' => $this->parent,
+            'author' => $this->author,
+            'committer' => $this->committer,
+            'message' => $this->message,
         ];
     }
 
@@ -57,7 +57,7 @@ class Commit
             $parent = file_get_contents('dotgit/'.$HEAD);
         }
 
-        return new self($tree, $parent, $author, $committer, $message);
+        return new self($tree, [$parent], $author, $committer, $message);
     }
 
     public static function restore(string $commitId): self
@@ -98,7 +98,7 @@ class Commit
         return $this->tree;
     }
 
-    public function parent(): string
+    public function parent(): array
     {
         return $this->parent;
     }
