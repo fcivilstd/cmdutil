@@ -6,6 +6,7 @@ use InvalidArgumentException;
 use RuntimeException;
 use Util\Lib\DataStructure\Queue;
 use Util\Git\Object\Commit;
+use Util\Git\Operation\Model\Diff;
 
 class Merge
 {
@@ -25,6 +26,8 @@ class Merge
         if (!$commonCommitId === '') {
             throw new RuntimeException('common commit was not fountd.');
         }
+
+        $diff = new Diff($this->filename('60809c8a496dee0ffbed31bc308b8ae60ad13cc5'), $this->filename('5fa063b101711baf004499b35bc0c35d52ce22e4'));
     }
 
     private function findBaseCommitId(): string
@@ -97,5 +100,12 @@ class Merge
         }
 
         return filemtime('dotgit/objects/'.$head2.'/'.$name);
+    }
+
+    private function filename(string $commitId): string
+    {
+        $head2 = substr($commitId, 0, 2);
+        $name = substr($commitId, 2);
+        return 'dotgit/objects/'.$head2.'/'.$name;
     }
 }
