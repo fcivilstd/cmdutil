@@ -7,6 +7,7 @@ use RuntimeException;
 use Util\Lib\DataStructure\Queue;
 use Util\Git\Object\Commit;
 use Util\Git\Operation\Model\Diff;
+use Util\Git\Operation\Model\RootTree;
 
 class Merge
 {
@@ -26,6 +27,14 @@ class Merge
         if (!$commonCommitId === '') {
             throw new RuntimeException('common commit was not fountd.');
         }
+
+        $baseRootTree = new RootTree($this->rootTree($baseCommitId));
+        $targetRootTree = new RootTree($this->rootTree($targetCommitId));
+        $commonRootTree = new RootTree($this->rootTree($commonCommitId));
+
+        var_dump($baseRootTree->content());
+        var_dump($targetRootTree->content());
+        var_dump($commonRootTree->content());
     }
 
     private function findBaseCommitId(): string
@@ -105,5 +114,14 @@ class Merge
         $head2 = substr($commitId, 0, 2);
         $name = substr($commitId, 2);
         return 'dotgit/objects/'.$head2.'/'.$name;
+    }
+
+    private function rootTree(string $commitId): string
+    {
+        if (!file_exists($this->filename($commitId))) {
+            throw new InvalidArgumentException($commitId.' doesn\'t exist.');
+        }
+
+        return json_decode(file_get_contents($this->filename($commitId)), true)['tree'];
     }
 }

@@ -8,16 +8,19 @@ class Tree
 {
     private string $head2 = '';
     private string $name = '';
-    private array $content = [];
-
-    public function addTree(self $tree, string $dirname): void
-    {
-        $this->content[$dirname] = $tree->head2().$tree->name();
-    }
+    private array $content = [
+        'blob' => [],
+        'tree' => [],
+    ];
 
     public function addBlob(Blob $blob, string $filename): void
     {
-        $this->content[$filename] = $blob->head2().$blob->name();
+        $this->content['blob'][$filename] = $blob->head2().$blob->name();
+    }
+
+    public function addTree(self $tree, string $dirname): void
+    {
+        $this->content['tree'][$dirname] = $tree->head2().$tree->name();
     }
 
     public function head2(): string
@@ -41,7 +44,8 @@ class Tree
 
     public function save(): void
     {
-        ksort($this->content);
+        ksort($this->content['blob']);
+        ksort($this->content['tree']);
 
         $content = json_encode($this->content());
 
