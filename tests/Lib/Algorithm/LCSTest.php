@@ -20,11 +20,19 @@ final class LCSTest extends TestCase
         restore_error_handler();
     }
 
-    public function testLcs(): void
+    public static function provide(): array
     {
-        $this->assertSame('abc', (new LCS('abc', 'abcdefg'))->lcs());
-        $this->assertSame(3, (new LCS('abc', 'abcdefg'))->length());
-        $this->assertSame('adef', (new LCS('adbecf', 'abcdefg'))->lcs());
-        $this->assertSame(4, (new LCS('adbecf', 'abcdefg'))->length());
+        return [
+            [['a', 'b', 'hoge', 'e'], new LCS(['a', 'b', 'z', 'hoge', 'y', 'e', 'piyo'], ['a', 'b', 'c', 'hoge', 'd', 'e', 'f', 'huga', 'g'])],
+        ];
+    }
+
+    /**
+     * @dataProvider provide
+     */
+    public function testLCS(array $expected, LCS $lcs): void
+    {
+        $this->assertSame($expected, $lcs->lcs());
+        $this->assertSame(count($expected), $lcs->length());
     }
 }

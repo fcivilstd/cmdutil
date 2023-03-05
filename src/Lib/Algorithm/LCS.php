@@ -5,20 +5,20 @@ namespace Util\Lib\Algorithm;
 class LCS
 {
     private array $dp = [];
-    private string $s = '';
-    private string $t = '';
+    private array $s = [];
+    private array $t = [];
     private int $sLength = 0;
     private int $tLength = 0;
-    private string $lcs = '';
+    private array $lcs = [];
     private int $lcsLength = 0;
 
-    public function __construct(string $s, string $t)
+    public function __construct(array $s, array $t)
     {
         $this->s = $s;
-        $this->sLength = mb_strlen($s);
+        $this->sLength = count($s);
 
         $this->t = $t;
-        $this->tLength = mb_strlen($t);
+        $this->tLength = count($t);
 
         $this->dp = array_fill(0, $this->sLength + 1, array_fill(0, $this->tLength + 1, 0));
         $this->solve();
@@ -39,7 +39,7 @@ class LCS
         $i = $this->sLength; $j = $this->tLength;
         while ($i > 0 && $j > 0) {
             if ($this->s[$i - 1] === $this->t[$j - 1]) {
-                $this->lcs .= $this->s[$i - 1];
+                $this->lcs[] = $this->s[$i - 1];
                 $i--; $j--;
             } else if ($this->dp[$i][$j] === $this->dp[$i - 1][$j]) {
                 $i--;
@@ -48,8 +48,8 @@ class LCS
             }
         }
 
-        $this->lcs = strrev($this->lcs);
-        $this->lcsLength = mb_strlen($this->lcs);
+        $this->lcs = array_reverse($this->lcs);
+        $this->lcsLength = count($this->lcs);
     }
 
     public function length(): int
@@ -57,7 +57,7 @@ class LCS
         return $this->lcsLength;
     }
 
-    public function lcs(): string
+    public function lcs(): array
     {
         return $this->lcs;
     }
