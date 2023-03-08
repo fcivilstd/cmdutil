@@ -23,7 +23,7 @@ final class LCSTest extends TestCase
     public static function provide(): array
     {
         return [
-            [['a', 'b', 'hoge', 'e'], new LCS(['a', 'b', 'z', 'hoge', 'y', 'e', 'piyo'], ['a', 'b', 'c', 'hoge', 'd', 'e', 'f', 'huga', 'g'])],
+            [[['a', 'b', 'hoge', 'e'], [0, 1, 3, 5]], new LCS(['a', 'b', 'z', 'hoge', 'y', 'e', 'piyo'], ['a', 'b', 'c', 'hoge', 'd', 'e', 'f', 'huga', 'g'])],
         ];
     }
 
@@ -32,7 +32,10 @@ final class LCSTest extends TestCase
      */
     public function testLCS(array $expected, LCS $lcs): void
     {
-        $this->assertSame($expected, $lcs->lcs());
-        $this->assertSame(count($expected), $lcs->length());
+        var_dump($lcs->lcsSourceKey());
+
+        $this->assertSame($expected[0], $lcs->lcs());
+        $this->assertSame(count($expected[0]), $lcs->length());
+        $this->assertSame($expected[1], $lcs->lcsSourceKey());
     }
 }

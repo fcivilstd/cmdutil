@@ -22,5 +22,14 @@ class Checkout
         $fp = fopen('dotgit/HEAD', 'w');
         fwrite($fp, 'refs/heads/'.$branch);
         fclose($fp);
+
+        $files = json_decode(file_get_contents('dotgit/index'), true)[$branch];
+        foreach ($files as $filename => $hash) {
+            $head2 = substr($hash, 0, 2);
+            $name = substr($hash, 2);
+
+            assert(file_exists('dotgit/objects/'.$head2.'/'.$name) !== false);
+            copy('dotgit/objects/'.$head2.'/'.$name, $filename);
+        }
     }
 }

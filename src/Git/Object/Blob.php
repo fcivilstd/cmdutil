@@ -10,16 +10,27 @@ class Blob
     private string $name = '';
     private string $content = '';
 
-    public function __construct(string $filename)
+    private function __construct(string $content)
+    {
+        $this->content = $content;
+        $hash = sha1('blob '.(string)strlen($content).'\0'.$content);
+        $this->head2 = substr($hash, 0, 2);
+        $this->name = substr($hash, 2);
+    }
+
+    public static function fromFilename(string $filename): self
     {
         if (!file_exists($filename)) {
             throw new InvalidArgumentException($filename.' doesn\'t exist.');
         }
 
-        $this->content = file_get_contents($filename);
-        $hash = sha1('blob '.(string)filesize($filename).'\0'.$this->content);
-        $this->head2 = substr($hash, 0, 2);
-        $this->name = substr($hash, 2);
+        $content = file_get_contents($filename);
+        return new self($content);
+    }
+
+    public static function fromContent(string $content): self
+    {
+        return new self($content);
     }
     
     public function head2(): string

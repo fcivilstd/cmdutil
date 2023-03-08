@@ -30,7 +30,7 @@ class Commit
             if (count(explode('/', $_path)) !== 1) continue;
             // ファイル
             if ($target === []) {
-                $root->addBlob(new Blob($_path), $_path);
+                $root->addBlob(Blob::fromFilename($_path), $_path);
                 continue;
             }
             // ディレクトリ
@@ -55,7 +55,7 @@ class Commit
             $_path = preg_replace('/\A\//u', '', $path);
             // ファイル
             if ($index->graph()[$path.'/'.$target] === []) {
-                $tree->addBlob(new Blob($_path.'/'.$target), $_path.'/'.$target);
+                $tree->addBlob(Blob::fromFilename($_path.'/'.$target), $_path.'/'.$target);
                 continue;
             }
             // ディレクトリ

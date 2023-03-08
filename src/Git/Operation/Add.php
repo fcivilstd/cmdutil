@@ -20,7 +20,7 @@ class Add
             throw new InvalidArgumentException($filename.' doesn\'t exist.');
         }
 
-        $blob = new Blob($filename);
+        $blob = Blob::fromFilename($filename);
         $blob->save();
 
         $index = new Index();

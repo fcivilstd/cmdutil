@@ -10,6 +10,7 @@ class LCS
     private int $sLength = 0;
     private int $tLength = 0;
     private array $lcs = [];
+    private array $lcsSourceKey = [];
     private int $lcsLength = 0;
 
     public function __construct(array $s, array $t)
@@ -40,6 +41,7 @@ class LCS
         while ($i > 0 && $j > 0) {
             if ($this->s[$i - 1] === $this->t[$j - 1]) {
                 $this->lcs[] = $this->s[$i - 1];
+                $this->lcsSourceKey[] = $i - 1;
                 $i--; $j--;
             } else if ($this->dp[$i][$j] === $this->dp[$i - 1][$j]) {
                 $i--;
@@ -49,6 +51,7 @@ class LCS
         }
 
         $this->lcs = array_reverse($this->lcs);
+        $this->lcsSourceKey = array_reverse($this->lcsSourceKey);
         $this->lcsLength = count($this->lcs);
     }
 
@@ -60,5 +63,10 @@ class LCS
     public function lcs(): array
     {
         return $this->lcs;
+    }
+
+    public function lcsSourceKey(): array
+    {
+        return $this->lcsSourceKey;
     }
 }
