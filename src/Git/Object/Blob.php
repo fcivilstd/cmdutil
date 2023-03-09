@@ -6,6 +6,7 @@ use InvalidArgumentException;
 
 class Blob
 {
+    private string $hash = '';
     private string $head2 = '';
     private string $name = '';
     private string $content = '';
@@ -13,9 +14,9 @@ class Blob
     private function __construct(string $content)
     {
         $this->content = $content;
-        $hash = sha1('blob '.(string)strlen($content).'\0'.$content);
-        $this->head2 = substr($hash, 0, 2);
-        $this->name = substr($hash, 2);
+        $this->hash = sha1('blob '.(string)strlen($content).'\0'.$content);
+        $this->head2 = substr($this->hash, 0, 2);
+        $this->name = substr($this->hash, 2);
     }
 
     public static function fromFilename(string $filename): self
@@ -31,6 +32,13 @@ class Blob
     public static function fromContent(string $content): self
     {
         return new self($content);
+    }
+
+    public function hash(): string
+    {
+        assert($this->hash !== '');
+
+        return $this->hash;
     }
     
     public function head2(): string

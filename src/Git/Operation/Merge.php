@@ -4,14 +4,18 @@ namespace Util\Git\Operation;
 
 use InvalidArgumentException;
 use RuntimeException;
+use Util\Git\Index;
 use Util\Lib\DataStructure\Queue;
 use Util\Git\Object\Commit;
+use Util\Git\Object\Tree;
 use Util\Git\Operation\Model\Diff;
 use Util\Git\Operation\Model\RootTree;
 use Util\Git\Object\Blob;
 
 class Merge
 {
+    private Index $index;
+
     public function execute(array $args): void
     {
         if ($args === []) {
@@ -29,7 +33,52 @@ class Merge
             throw new RuntimeException('common commit was not fountd.');
         }
 
+        $this->index = new Index();
+
         $this->mergeDiff($baseCommitId, $targetCommitId, $commonCommitId);
+
+        $root = new Tree();
+        foreach ($this->index->graph() as $path => $target) {
+            $_path = preg_replace('/\A\//u', '', $path);
+            if (count(explode('/', $_path)) !== 1) continue;
+            // ファイル
+            if ($target === []) {
+                $root->addBlob(Blob::fromFilename($_path), $_path);
+                continue;
+            }
+            // ディレクトリ
+            $root->addTree($this->assembleTree($this->index, $path), $_path);
+        }
+
+        $root->save();
+
+        $commit = \Util\Git\Object\Commit::newSpecifiedParents(
+                    $root->head2().$root->name(),
+                    [$baseCommitId, $targetCommitId],
+                    'me',
+                    'me',
+                    'merge commit');
+        $commit->save();
+    }
+
+    private function assembleTree(Index $index, string $path): Tree
+    {
+        $tree = new Tree();
+        $_path = preg_replace('/\A\//u', '', $path);
+        foreach ($index->graph()[$path] as $target) {
+            $_path = preg_replace('/\A\//u', '', $path);
+            // ファイル
+            if ($index->graph()[$path.'/'.$target] === []) {
+                $tree->addBlob(Blob::fromFilename($_path.'/'.$target), $_path.'/'.$target);
+                continue;
+            }
+            // ディレクトリ
+            $tree->addTree($this->assembleTree($index, $path.'/'.$target), $_path.'/'.$target);
+        }
+
+        $tree->save();
+
+        return $tree;
     }
 
     private function mergeDiff(string $baseCommitId, string $targetCommitId, string $commonCommitId): void
@@ -38,12 +87,9 @@ class Merge
         $targetRootTree = new RootTree($this->rootTree($targetCommitId));
         $commonRootTree = new RootTree($this->rootTree($commonCommitId));
 
-        $deletedFiles = [];
-        $baseDeleted = [];
-        $baseAdded = [];
         foreach ($commonRootTree->content() as $filename => $hash) {
-            if (!isset($baseRootTree->content()[$filename])) {
-                $deletedFiles[$filename] = $hash;
+            if (!isset($baseRootTree->content()[$filename]) || !isset($targetRootTree->content()[$filename])) {
+                $this->index->remove($filename);
             }
             $baseDeleted = [];
             $baseAdded = [];
@@ -73,8 +119,43 @@ class Merge
             $blob = $this->generageMergedBlob($hash, $mergedDeleted, $mergedAdded);
             $blob->save();
 
-            var_dump($blob->content());
-        }    
+            $this->index->update($filename, $blob->hash());
+        }
+
+        foreach ($baseRootTree->content() as $filename => $hash) {
+            if (!isset($targetRootTree->content()[$filename]) || isset($commonRootTree->content()[$filename])) continue;
+            $baseDeleted = [];
+            $baseAdded = [];
+            if (isset($baseRootTree->content()[$filename]) && $baseRootTree->content()[$filename] !== $hash) {
+                $diff = Diff::fromFilename($this->filename($hash), $this->filename($baseRootTree->content()[$filename]));
+                $baseDeleted = $diff->deleted();
+                $baseAdded = $diff->added();
+            }
+            $targetDeleted = [];
+            $targetAdded = [];
+            if (isset($targetRootTree->content()[$filename]) && $targetRootTree->content()[$filename] !== $hash) {
+                $diff = Diff::fromFilename($this->filename($hash), $this->filename($targetRootTree->content()[$filename]));
+                $targetDeleted = $diff->deleted();
+                $targetAdded = $diff->added();
+            }
+
+            if (count(array_intersect_key($baseDeleted, $targetDeleted)) > 0 || count(array_intersect_key($baseAdded, $targetAdded)) > 0) {
+                throw new RuntimeException('this merge conflicted.');
+            }
+
+            $mergedDeleted = $baseDeleted + $targetDeleted;
+            $mergedAdded = $baseAdded + $targetAdded;
+            ksort($mergedAdded);
+
+            if (count($mergedDeleted) === 0 && count($mergedAdded) === 0) continue;
+
+            $blob = $this->generageMergedBlob($hash, $mergedDeleted, $mergedAdded);
+            $blob->save();
+
+            $this->index->update($filename, $blob->hash());
+        }
+
+        $this->index->save();
     }
 
     private function generageMergedBlob(string $commonBlobId, array $mergedDeleted, array $mergedAdded): Blob

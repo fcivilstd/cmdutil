@@ -60,6 +60,17 @@ class Commit
         return new self($tree, [$parent], $author, $committer, $message);
     }
 
+    public static function newSpecifiedParents(
+        string $tree,
+        array $parents,
+        string $author,
+        string $committer,
+        string $message
+    ): self
+    {
+        return new self($tree, $parents, $author, $committer, $message);
+    }
+
     public static function restore(string $commitId): self
     {
         $head2 = substr($commitId, 0, 2);
