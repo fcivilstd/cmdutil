@@ -8,12 +8,8 @@ use Util\Git\Object\Blob;
 
 class Add
 {
-    public function execute(array $args): void
+    public static function execute(array $args): void
     {
-        if (!file_exists('dotgit')) {
-            throw new InvalidArgumentException('dotgit directory doesn\'t exist.');
-        }
-
         $filename = $args[0];
 
         if (!file_exists($filename)) {
@@ -24,7 +20,7 @@ class Add
         $blob->save();
 
         $index = new Index();
-        $index->update($filename, $blob->head2().$blob->name());
+        $index->update($filename, $blob->hash());
         $index->save();
     }
 }

@@ -7,15 +7,18 @@ use Util\Git\Index;
 
 class Branch
 {
-    public function execute(array $args): void
+    public static function execute(array $args): void
     {
         if ($args === []) {
             echo 'specify branch name'.PHP_EOL;
             return;
         }
 
-        $branch = str_replace(' ', '', $args[0]);
+        self::executeWithBranch(str_replace(' ', '', $args[0]));
+    }
 
+    public static function executeWithBranch(string $branch): void
+    {
         assert(file_exists('dotgit/refs/heads') !== false);
         if (file_exists('dotgit/refs/heads/'.$branch)) {
             throw new InvalidArgumentException($branch.' has already existed.');

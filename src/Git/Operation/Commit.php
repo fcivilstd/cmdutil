@@ -9,7 +9,7 @@ use Util\Git\Object\Tree;
 
 class Commit
 {
-    public function execute(array $args): void
+    public static function execute(array $args): void
     {
         $message = '';
         foreach ($args as $arg) {
@@ -24,6 +24,19 @@ class Commit
         }
 
         $index = new Index();
+        $root = self::assembleRootTree($index);
+        $root->save();
+
+        $commit = \Util\Git\Object\Commit::readHEAD(
+                    $root->hash(),
+                    'me',
+                    'me',
+                    $message);
+        $commit->save();
+    }
+
+    public static function assembleRootTree(Index $index): Tree
+    {
         $root = new Tree();
         foreach ($index->graph() as $path => $target) {
             $_path = preg_replace('/\A\//u', '', $path);
@@ -34,20 +47,12 @@ class Commit
                 continue;
             }
             // ディレクトリ
-            $root->addTree($this->assembleTree($index, $path), $_path);
+            $root->addTree(self::assembleTree($index, $path), $_path);
         }
-
-        $root->save();
-
-        $commit = \Util\Git\Object\Commit::new(
-                    $root->head2().$root->name(),
-                    'me',
-                    'me',
-                    $message);
-        $commit->save();
+        return $root;
     }
 
-    private function assembleTree(Index $index, string $path): Tree
+    private static function assembleTree(Index $index, string $path): Tree
     {
         $tree = new Tree();
         $_path = preg_replace('/\A\//u', '', $path);
@@ -59,7 +64,7 @@ class Commit
                 continue;
             }
             // ディレクトリ
-            $tree->addTree($this->assembleTree($index, $path.'/'.$target), $_path.'/'.$target);
+            $tree->addTree(self::assembleTree($index, $path.'/'.$target), $_path.'/'.$target);
         }
 
         $tree->save();

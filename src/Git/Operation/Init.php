@@ -4,7 +4,7 @@ namespace Util\Git\Operation;
 
 class Init
 {
-    public function execute(array $args): void
+    public static function execute(array $args): void
     {
         if (!file_exists('dotgit')) {
             mkdir('dotgit');

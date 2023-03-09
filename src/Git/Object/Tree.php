@@ -2,12 +2,11 @@
 
 namespace Util\Git\Object;
 
+use Util\Git\Object\GitObject;
 use Util\Git\Object\Blob;
 
-class Tree
+class Tree extends GitObject
 {
-    private string $head2 = '';
-    private string $name = '';
     private array $content = [
         'blob' => [],
         'tree' => [],
@@ -23,20 +22,6 @@ class Tree
         $this->content['tree'][$dirname] = $tree->head2().$tree->name();
     }
 
-    public function head2(): string
-    {
-        assert($this->head2 !== '');
-        
-        return $this->head2;
-    }
-
-    public function name(): string
-    {
-        assert($this->name !== '');
-
-        return $this->name;
-    }
-
     public function content(): array
     {
         return $this->content;
@@ -49,9 +34,11 @@ class Tree
 
         $content = json_encode($this->content());
 
-        $hash = sha1('tree '.(string)strlen($content).'\0'.$content);
-        $this->head2 = substr($hash, 0, 2);
-        $this->name = substr($hash, 2);
+        $this->hash = sha1('tree '.(string)strlen($content).'\0'.$content);
+        $this->head2 = substr($this->hash, 0, 2);
+        $this->name = substr($this->hash, 2);
+
+        if ($this->exists()) return;
 
         if (!file_exists('dotgit/objects/'.$this->head2())) {
             mkdir('dotgit/objects/'.$this->head2());

@@ -14,7 +14,7 @@ class Queue
     public function front(): mixed
     {
         if ($this->stacks[1] !== []) {
-            return $this->stacks[1][count($this->stacks) - 1];
+            return $this->stacks[1][count($this->stacks[1]) - 1];
         }
 
         if ($this->stacks[0] !== []) {

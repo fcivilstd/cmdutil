@@ -3,12 +3,10 @@
 namespace Util\Git\Object;
 
 use InvalidArgumentException;
+use Util\Git\Object\GitObject;
 
-class Blob
+class Blob extends GitObject
 {
-    private string $hash = '';
-    private string $head2 = '';
-    private string $name = '';
     private string $content = '';
 
     private function __construct(string $content)
@@ -33,27 +31,6 @@ class Blob
     {
         return new self($content);
     }
-
-    public function hash(): string
-    {
-        assert($this->hash !== '');
-
-        return $this->hash;
-    }
-    
-    public function head2(): string
-    {
-        assert($this->head2 !== '');
-        
-        return $this->head2;
-    }
-
-    public function name(): string
-    {
-        assert($this->name !== '');
-
-        return $this->name;
-    }
     
     public function content(): string
     {
@@ -62,7 +39,7 @@ class Blob
 
     public function save(): void
     {
-        if (file_exists('dotgit/objects/'.$this->head2().'/'.$this->name())) return;
+        if ($this->exists()) return;
 
         if (!file_exists('dotgit/objects/'.$this->head2())) {
             mkdir('dotgit/objects/'.$this->head2());

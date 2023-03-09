@@ -3,12 +3,10 @@
 namespace Util\Git\Object;
 
 use InvalidArgumentException;
+use Util\Git\Object\GitObject;
 
-class Commit
+class Commit extends GitObject
 {
-    private string $head2 = '';
-    private string $name = '';
-
     private string $tree = '';
     private array $parent = [];
     private string $author = '';
@@ -29,8 +27,7 @@ class Commit
         $this->author = $author;
         $this->committer = $committer;
         if ($message === '') {
-            echo 'input message.'.PHP_EOL;
-            return;
+            throw new InvalidArgumentException('no message.');
         }
         $this->message = $message;
         $this->content = [
@@ -42,7 +39,7 @@ class Commit
         ];
     }
 
-    public static function new(
+    public static function readHEAD(
         string $tree,
         string $author,
         string $committer,
@@ -60,7 +57,7 @@ class Commit
         return new self($tree, [$parent], $author, $committer, $message);
     }
 
-    public static function newSpecifiedParents(
+    public static function withParents(
         string $tree,
         array $parents,
         string $author,
@@ -86,20 +83,6 @@ class Commit
             $content['author'],
             $content['committer'],
             $content['message']);
-    }
-
-    public function head2(): string
-    {
-        assert($this->head2 !== '');
-
-        return $this->head2;
-    }
-
-    public function name(): string
-    {
-        assert($this->name !== '');
-
-        return $this->name;
     }
 
     public function tree(): string
@@ -146,9 +129,17 @@ class Commit
     {
         $content = json_encode($this->content());
 
-        $hash = sha1('commit '.(string)strlen($content).'\0'.$content);
-        $this->head2 = substr($hash, 0, 2);
-        $this->name = substr($hash, 2);
+        $this->hash = sha1('commit '.(string)strlen($content).'\0'.$content);
+        $this->head2 = substr($this->hash, 0, 2);
+        $this->name = substr($this->hash, 2);
+
+        assert(file_exists('dotgit/HEAD') !== false);
+        $HEAD = file_get_contents('dotgit/HEAD');
+        $fp = fopen('dotgit/'.$HEAD, 'w');
+        fwrite($fp, $this->hash());
+        fclose($fp);
+
+        if ($this->exists()) return;
 
         if (!file_exists('dotgit/objects/'.$this->head2())) {
             mkdir('dotgit/objects/'.$this->head2());
@@ -156,12 +147,6 @@ class Commit
 
         $fp = fopen('dotgit/objects/'.$this->head2().'/'.$this->name(), 'w');
         fwrite($fp, $content);
-        fclose($fp);
-
-        assert(file_exists('dotgit/HEAD') !== false);
-        $HEAD = file_get_contents('dotgit/HEAD');
-        $fp = fopen('dotgit/'.$HEAD, 'w');
-        fwrite($fp, $this->head2().$this->name());
         fclose($fp);
     }
 }

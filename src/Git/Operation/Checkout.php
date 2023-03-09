@@ -3,18 +3,21 @@
 namespace Util\Git\Operation;
 
 use InvalidArgumentException;
+use Util\Git\Operation\Branch;
 
 class Checkout
 {
-    public function execute(array $args): void
+    public static function execute(array $args): void
     {
         if ($args === []) {
-            echo 'specify branch name.';
-            return;
+            throw new InvalidArgumentException('specify branch.');
         }
 
-        $branch = str_replace(' ', '', $args[0]);
+        self::executeWithBranch(str_replace(' ', '', $args[0]));
+    }
 
+    public static function executeWithBranch(string $branch): void
+    {
         if (!file_exists('dotgit/refs/heads/'.$branch)) {
             throw new InvalidArgumentException($branch.' doesn\'t exist.');
         }

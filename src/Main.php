@@ -6,25 +6,11 @@ use InvalidArgumentException;
 
 class Main
 {
-    private array $commands = [
+    private static array $commands = [
         'git' => \Util\Git\GitController::class,
     ];
 
-    private string $rootDir = '';
-
-    public function __construct(string $rootDir)
-    {
-        $this->rootDir = $rootDir;
-    }
-
-    private function rootDir(): string
-    {
-        assert($this->rootDir !== '');
-
-        return $this->rootDir;
-    }
-
-    public function execute(array $args): void
+    public static function execute(array $args): void
     {
         $cmd = '';
         foreach ($args as $arg) {
@@ -34,10 +20,10 @@ class Main
             }
         }
 
-        if (!isset($this->commands[$cmd])) {
+        if (!isset(self::$commands[$cmd])) {
             throw new InvalidArgumentException($cmd.' doesn\'t exist.');
         }
 
-        (new $this->commands[$cmd])->execute(array_slice($args, 2));
+        self::$commands[$cmd]::execute(array_slice($args, 2));
     }
 }

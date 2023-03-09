@@ -6,7 +6,7 @@ use Util\Git\Index;
 
 class Remove
 {
-    public function execute(array $args): void
+    public static function execute(array $args): void
     {
         $filename = $args[0];
 

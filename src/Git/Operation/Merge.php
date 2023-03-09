@@ -7,101 +7,67 @@ use RuntimeException;
 use Util\Git\Index;
 use Util\Lib\DataStructure\Queue;
 use Util\Git\Object\Commit;
-use Util\Git\Object\Tree;
 use Util\Git\Operation\Model\Diff;
 use Util\Git\Operation\Model\RootTree;
 use Util\Git\Object\Blob;
 
 class Merge
 {
-    private Index $index;
-
-    public function execute(array $args): void
+    public static function execute(array $args): void
     {
         if ($args === []) {
-            echo 'specify branch name'.PHP_EOL;
-            return;
+            throw new InvalidArgumentException('specify branch name');
         }
 
         $branch = str_replace(' ', '', $args[0]);
 
-        $baseCommitId = $this->findBaseCommitId();
-        $targetCommitId = $this->findTargetCommitId($branch);
-        $commonCommitId = $this->findCommonCommitId($baseCommitId, $targetCommitId);
+        $baseCommitId = self::findBaseCommitId();
+        $targetCommitId = self::findTargetCommitId($branch);
+        $commonCommitId = self::findCommonCommitId($baseCommitId, $targetCommitId);
 
         if (!$commonCommitId === '') {
             throw new RuntimeException('common commit was not fountd.');
         }
 
-        $this->index = new Index();
+        $index = new Index();
 
-        $this->mergeDiff($baseCommitId, $targetCommitId, $commonCommitId);
+        self::mergeDiff($baseCommitId, $targetCommitId, $commonCommitId, $index);
 
-        $root = new Tree();
-        foreach ($this->index->graph() as $path => $target) {
-            $_path = preg_replace('/\A\//u', '', $path);
-            if (count(explode('/', $_path)) !== 1) continue;
-            // ファイル
-            if ($target === []) {
-                $root->addBlob(Blob::fromFilename($_path), $_path);
-                continue;
-            }
-            // ディレクトリ
-            $root->addTree($this->assembleTree($this->index, $path), $_path);
-        }
-
+        $root = \Util\Git\Operation\Commit::assembleRootTree($index);
         $root->save();
 
-        $commit = \Util\Git\Object\Commit::newSpecifiedParents(
-                    $root->head2().$root->name(),
+        $commit = \Util\Git\Object\Commit::withParents(
+                    $root->hash(),
                     [$baseCommitId, $targetCommitId],
                     'me',
                     'me',
                     'merge commit');
         $commit->save();
+
+        Checkout::executeWithBranch($index->branch());
     }
 
-    private function assembleTree(Index $index, string $path): Tree
+    private static function mergeDiff(string $baseCommitId, string $targetCommitId, string $commonCommitId, Index $index): void
     {
-        $tree = new Tree();
-        $_path = preg_replace('/\A\//u', '', $path);
-        foreach ($index->graph()[$path] as $target) {
-            $_path = preg_replace('/\A\//u', '', $path);
-            // ファイル
-            if ($index->graph()[$path.'/'.$target] === []) {
-                $tree->addBlob(Blob::fromFilename($_path.'/'.$target), $_path.'/'.$target);
-                continue;
-            }
-            // ディレクトリ
-            $tree->addTree($this->assembleTree($index, $path.'/'.$target), $_path.'/'.$target);
-        }
-
-        $tree->save();
-
-        return $tree;
-    }
-
-    private function mergeDiff(string $baseCommitId, string $targetCommitId, string $commonCommitId): void
-    {
-        $baseRootTree = new RootTree($this->rootTree($baseCommitId));
-        $targetRootTree = new RootTree($this->rootTree($targetCommitId));
-        $commonRootTree = new RootTree($this->rootTree($commonCommitId));
+        $baseRootTree = new RootTree(self::rootTree($baseCommitId));
+        $targetRootTree = new RootTree(self::rootTree($targetCommitId));
+        $commonRootTree = new RootTree(self::rootTree($commonCommitId));
 
         foreach ($commonRootTree->content() as $filename => $hash) {
             if (!isset($baseRootTree->content()[$filename]) || !isset($targetRootTree->content()[$filename])) {
-                $this->index->remove($filename);
+                $index->remove($filename);
             }
             $baseDeleted = [];
             $baseAdded = [];
             if (isset($baseRootTree->content()[$filename]) && $baseRootTree->content()[$filename] !== $hash) {
-                $diff = Diff::fromFilename($this->filename($hash), $this->filename($baseRootTree->content()[$filename]));
+                $diff = Diff::fromFilename(self::filename($hash), self::filename($baseRootTree->content()[$filename]));
                 $baseDeleted = $diff->deleted();
                 $baseAdded = $diff->added();
             }
             $targetDeleted = [];
             $targetAdded = [];
             if (isset($targetRootTree->content()[$filename]) && $targetRootTree->content()[$filename] !== $hash) {
-                $diff = Diff::fromFilename($this->filename($hash), $this->filename($targetRootTree->content()[$filename]));
+                $diff = Diff::fromFilename(self::filename($hash), self::filename($targetRootTree->content()[$filename]));
                 $targetDeleted = $diff->deleted();
                 $targetAdded = $diff->added();
             }
@@ -116,10 +82,10 @@ class Merge
 
             if (count($mergedDeleted) === 0 && count($mergedAdded) === 0) continue;
 
-            $blob = $this->generageMergedBlob($hash, $mergedDeleted, $mergedAdded);
+            $blob = self::generageMergedBlob($hash, $mergedDeleted, $mergedAdded);
             $blob->save();
 
-            $this->index->update($filename, $blob->hash());
+            $index->update($filename, $blob->hash());
         }
 
         foreach ($baseRootTree->content() as $filename => $hash) {
@@ -127,14 +93,14 @@ class Merge
             $baseDeleted = [];
             $baseAdded = [];
             if (isset($baseRootTree->content()[$filename]) && $baseRootTree->content()[$filename] !== $hash) {
-                $diff = Diff::fromFilename($this->filename($hash), $this->filename($baseRootTree->content()[$filename]));
+                $diff = Diff::fromFilename(self::filename($hash), self::filename($baseRootTree->content()[$filename]));
                 $baseDeleted = $diff->deleted();
                 $baseAdded = $diff->added();
             }
             $targetDeleted = [];
             $targetAdded = [];
             if (isset($targetRootTree->content()[$filename]) && $targetRootTree->content()[$filename] !== $hash) {
-                $diff = Diff::fromFilename($this->filename($hash), $this->filename($targetRootTree->content()[$filename]));
+                $diff = Diff::fromFilename(self::filename($hash), self::filename($targetRootTree->content()[$filename]));
                 $targetDeleted = $diff->deleted();
                 $targetAdded = $diff->added();
             }
@@ -149,18 +115,18 @@ class Merge
 
             if (count($mergedDeleted) === 0 && count($mergedAdded) === 0) continue;
 
-            $blob = $this->generageMergedBlob($hash, $mergedDeleted, $mergedAdded);
+            $blob = self::generageMergedBlob($hash, $mergedDeleted, $mergedAdded);
             $blob->save();
 
-            $this->index->update($filename, $blob->hash());
+            $index->update($filename, $blob->hash());
         }
 
-        $this->index->save();
+        $index->save();
     }
 
-    private function generageMergedBlob(string $commonBlobId, array $mergedDeleted, array $mergedAdded): Blob
+    private static function generageMergedBlob(string $commonBlobId, array $mergedDeleted, array $mergedAdded): Blob
     {
-        $fp = fopen($this->filename($commonBlobId), 'r');
+        $fp = fopen(self::filename($commonBlobId), 'r');
 
         $mergedContent = '';
         $lineNo = 0;
@@ -181,7 +147,7 @@ class Merge
         return Blob::fromContent($mergedContent);
     }
 
-    private function findBaseCommitId(): string
+    private static function findBaseCommitId(): string
     {
         assert(file_exists('dotgit/HEAD') !== false);
         $HEAD = file_get_contents('dotgit/HEAD');
@@ -189,7 +155,7 @@ class Merge
         return file_get_contents('dotgit/'.$HEAD);
     }
 
-    private function findTargetCommitId(string $branch): string
+    private static function findTargetCommitId(string $branch): string
     {
         if (!file_exists('dotgit/refs/heads/'.$branch)) {
             throw new InvalidArgumentException($branch.' doesn\'t exist.');
@@ -198,18 +164,18 @@ class Merge
         return file_get_contents('dotgit/refs/heads/'.$branch);
     }
 
-    private function findCommonCommitId(string $baseCommitId, string $targetCommitId): string
+    private static function findCommonCommitId(string $baseCommitId, string $targetCommitId): string
     {
         $baseCommits = [];
         $targetCommits = [];
         $baseCommitsQueue = new Queue();
         $targetCommitsQueue = new Queue();
 
-        $baseCommits[$this->lastmod($baseCommitId)] = $baseCommitId;
+        $baseCommits[self::lastmod($baseCommitId)] = $baseCommitId;
         $baseCommitsQueue->push($baseCommitId);
         while ($baseCommitsQueue->size()) {
             $commit = $baseCommitsQueue->front(); $baseCommitsQueue->pop();
-            $baseCommits[$this->lastmod($commit)] = $commit;
+            $baseCommits[self::lastmod($commit)] = $commit;
 
             $parents = Commit::restore($commit)->parent();
             foreach ($parents as $parent) {
@@ -218,11 +184,11 @@ class Merge
             }
         }
 
-        $targetCommits[$this->lastmod($targetCommitId)] = $targetCommitId;
+        $targetCommits[self::lastmod($targetCommitId)] = $targetCommitId;
         $targetCommitsQueue->push($targetCommitId);
         while ($targetCommitsQueue->size()) {
             $commit = $targetCommitsQueue->front(); $targetCommitsQueue->pop();
-            $targetCommits[$this->lastmod($commit)] = $commit;
+            $targetCommits[self::lastmod($commit)] = $commit;
 
             $parents = Commit::restore($commit)->parent();
             foreach ($parents as $parent) {
@@ -242,7 +208,7 @@ class Merge
         return '';
     }
 
-    private function lastmod(string $commitId): int
+    private static function lastmod(string $commitId): int
     {
         $head2 = substr($commitId, 0, 2);
         $name = substr($commitId, 2);
@@ -253,19 +219,19 @@ class Merge
         return filemtime('dotgit/objects/'.$head2.'/'.$name);
     }
 
-    private function filename(string $objectId): string
+    private static function filename(string $objectId): string
     {
         $head2 = substr($objectId, 0, 2);
         $name = substr($objectId, 2);
         return 'dotgit/objects/'.$head2.'/'.$name;
     }
 
-    private function rootTree(string $commitId): string
+    private static function rootTree(string $commitId): string
     {
-        if (!file_exists($this->filename($commitId))) {
+        if (!file_exists(self::filename($commitId))) {
             throw new InvalidArgumentException($commitId.' doesn\'t exist.');
         }
 
-        return json_decode(file_get_contents($this->filename($commitId)), true)['tree'];
+        return json_decode(file_get_contents(self::filename($commitId)), true)['tree'];
     }
 }
